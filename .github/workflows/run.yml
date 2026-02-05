@@ -44,10 +44,18 @@ jobs:
         export LANGUAGE="${{ vars.LANGUAGE }}"
         export CATEGORIES="${{ vars.CATEGORIES }}"
         export MODEL_NAME="${{ vars.MODEL_NAME }}"
-        
-        # 使用Scrapy爬取
-        # Use Scrapy to crawl
-        scrapy crawl arxiv -o ../data/${today}.jsonl
+        export KEYWORDS="${{ vars.KEYWORDS }}"
+        export TEST_MODE="${{ vars.TEST_MODE }}"
+
+        # 使用Scrapy爬取 / Use Scrapy to crawl
+        # 测试模式：限制爬取数量 / Test mode: limit crawled items
+        if [ "$TEST_MODE" = "true" ]; then
+          echo "🧪 测试模式：只爬取5篇论文 / Test mode: crawling only 5 papers"
+          scrapy crawl arxiv -s CLOSESPIDER_ITEMCOUNT=5 -o ../data/${today}.jsonl
+        else
+          echo "📚 正常模式：爬取所有论文 / Normal mode: crawling all papers"
+          scrapy crawl arxiv -o ../data/${today}.jsonl
+        fi
         
         # 检查爬取是否成功 / Check if crawling was successful
         if [ ! -f "../data/${today}.jsonl" ]; then

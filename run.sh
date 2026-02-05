@@ -25,6 +25,8 @@ if [ -z "$OPENAI_API_KEY" ]; then
     echo "   export LANGUAGE=\"Chinese\"                           # 语言设置 / Language setting"
     echo "   export CATEGORIES=\"cs.CV, cs.CL\"                    # 关注分类 / Categories of interest"
     echo "   export MODEL_NAME=\"gpt-4o-mini\"                     # 模型名称 / Model name"
+    echo "   export KEYWORDS=\"continual learning,world model\"    # 关键词过滤 / Keyword filtering"
+    echo "   export TEST_MODE=\"true\"                             # 测试模式(只爬5篇) / Test mode (only 5 papers)"
     echo ""
     echo "💡 设置后重新运行此脚本即可进行完整测试 / After setting, rerun this script for complete testing"
     echo "🚀 或者继续运行部分流程（爬取+去重检查）/ Or continue with partial workflow (crawl + dedup check)"
@@ -44,10 +46,12 @@ else
     export CATEGORIES="${CATEGORIES:-cs.CV, cs.CL}"
     export MODEL_NAME="${MODEL_NAME:-gpt-4o-mini}"
     export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://api.openai.com/v1}"
-    
+    export KEYWORDS="${KEYWORDS:-}"
+
     echo "🔧 当前配置 / Current configuration:"
     echo "   LANGUAGE: $LANGUAGE"
     echo "   CATEGORIES: $CATEGORIES"
+    echo "   KEYWORDS: ${KEYWORDS:-<not set - will include all papers>}"
     echo "   MODEL_NAME: $MODEL_NAME"
     echo "   OPENAI_BASE_URL: $OPENAI_BASE_URL"
 fi
@@ -73,7 +77,15 @@ else
 fi
 
 cd daily_arxiv
-scrapy crawl arxiv -o ../data/${today}.jsonl
+
+# 测试模式：限制爬取数量 / Test mode: limit crawled items
+if [ "$TEST_MODE" = "true" ]; then
+    echo "🧪 测试模式：只爬取5篇论文 / Test mode: crawling only 5 papers"
+    scrapy crawl arxiv -s CLOSESPIDER_ITEMCOUNT=5 -o ../data/${today}.jsonl
+else
+    echo "📚 正常模式：爬取所有论文 / Normal mode: crawling all papers"
+    scrapy crawl arxiv -o ../data/${today}.jsonl
+fi
 
 if [ ! -f "../data/${today}.jsonl" ]; then
     echo "爬取失败，未生成数据文件 / Crawling failed, no data file generated"
